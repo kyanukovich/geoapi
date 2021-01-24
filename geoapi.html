@@ -1,0 +1,194 @@
+<!-- Тестове завдання було виконано за допомогою Google Maps API та Geolocation API. -->
+<!-- Pоспiзнавання геолокацiї може займати декiлька секунд. -->
+<!-- Всi ключові фактори коду були відповідно прокоментовані. -->
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Full-stack Developer Test Task</title>
+
+    <!-- Вказання необхiдних посилань для роботи API -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=default"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDtyaPl6MU2wCkvnu-nDxoIiLyVMpnrSgo&libraries=places&v=weekly&callback=initMap" defer></script>
+    <style type="text/css">
+        body {
+            font-family: "Calibri Light", sans-serif;
+            text-align: center;
+        }
+
+        #map {
+            height: 540px;
+            width: 66%;
+            border-radius: 12px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        h2 {
+            font-size: 22px;
+            margin: 15px 0 5px 0;
+        }
+
+        list {
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        ul {
+            list-style-type: none;
+            display: block;
+            height: 460px;
+            width: 278px;
+            overflow-y: scroll;
+        }
+
+        li {
+            background-color: #f1f1f1;
+            padding: 10px;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        li:nth-child(odd) {
+            background-color: #fcfcfc;
+        }
+
+        .flex-container {
+            display: flex;
+            flex-wrap: nowrap;
+        }
+    </style>
+    <script>
+
+        // Оголошення змінних
+        let home;
+        let map;
+        let infoWindow;
+        let request;
+        let service;
+
+        // Прописання функцiї iніціалізації географiчної мапи
+        function initMap() {
+
+            // Задання локацiї за замовчуванням
+            home = {
+                lat: 50.4501,
+                lng: 30.5234
+            }
+
+            // Налаштування огляду та позицiї
+            map = new google.maps.Map(document.getElementById("map"), {
+                center: home,
+                zoom: 14
+            });
+
+            // Створення "шпильки" поточної позицiї
+            infoWindow = new google.maps.InfoWindow();
+
+            // Налаштування запиту геолокацiї
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+
+                        // Налаштування параметрiв широти та довготи
+                        home = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude
+                        };
+
+                        // Вказання нової позицiї
+                        infoWindow.setPosition(home);
+                        infoWindow.setContent("Ви тут!");
+
+                        // Надання функцiї переходу на нову мiсцевiсть
+                        infoWindow.open(map);
+                        map.setCenter(home);
+
+                        // Виведення ресторанiв y радiyci одного кiлометра
+                        request = {
+                            location: home,
+                            radius: 1000,
+                            type: "restaurant"
+                        };
+
+                        // Додавання мiток мiсцезнаходження ресторанiв
+                        service = new google.maps.places.PlacesService(map);
+                        service.nearbySearch({
+                                location: home,
+                                radius: 1000,
+                                type: "restaurant"
+                            },
+                            (results, status, pagination) => {
+                                createMarkers(results, map);
+                                return;
+                            }
+                        );
+                    },
+                );
+
+            // Налаштування перевiрки пiдтримки геолокацiї
+            } else {
+                handleLocationError(false, infoWindow, map.getCenter());
+            };
+        }
+
+        // Надання функцiї створення мiток
+        function createMarkers(places, map) {
+
+            // Вказання кордонiв довготи та широти
+            const bounds = new google.maps.LatLngBounds();
+
+            // Створення списку знайдених мiсць
+            const placesList = document.getElementById("places");
+            for (let i = 0, place;
+                 (place = places[i]); i++) {
+
+                // Вiзуальне налаштування мiток
+                const image = {
+                    url: place.icon,
+                    size: new google.maps.Size(71, 71),
+                    origin: new google.maps.Point(0, 0),
+                    anchor: new google.maps.Point(17, 34),
+                    scaledSize: new google.maps.Size(25, 25),
+                };
+
+                // Налаштування параметрiв вiдповiдно кожної мiтки
+                new google.maps.Marker({
+                    map,
+                    icon: image,
+                    title: place.name,
+                    position: place.geometry.location,
+                });
+
+                // Заповнення списку за отриманними мiсцями
+                const li = document.createElement("li");
+                li.textContent = place.name;
+                placesList.appendChild(li);
+                bounds.extend(place.geometry.location);
+            }
+
+            // Встановення областi перегляду, щоб містити задані межі
+            map.fitBounds(bounds);
+        }
+    </script>
+</head>
+
+<body>
+<h1>Найближчi до мене заклади харчування</h1>
+
+<div class="flex-container">
+    <div id="map"></div>
+    <div id="list">
+        <h2>Результати</h2>
+        <ul id="places"></ul>
+    </div>
+</div>
+</body>
+
+</html>
